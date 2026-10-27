@@ -50,7 +50,7 @@ export default function App() {
     } catch (err) {
       // Network failure, CORS issue, or backend not running
       setError(
-        "Could not reach the server. Make sure the backend is running on port 8000."
+        "Could not reach the server. Make sure the backend is running on port 8001."
       );
     } finally {
       setIsLoading(false);
