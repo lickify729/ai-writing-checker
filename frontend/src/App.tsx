@@ -1,6 +1,6 @@
-import { useState } from "react";
 import type { WritingFeedback, WritingStyle } from "./types";
 import "./App.css";
+import { useState, useEffect } from "react";
 
 export default function App() {
   const [text, setText] = useState("");
@@ -11,6 +11,8 @@ export default function App() {
 
   // Count words (simple: split on whitespace, ignore empty strings)
   const wordCount = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+  const charCount = text.length;
+  const overLimit = charCount > 8000;
 
     const handleAnalyze = async () => {
     if (text.trim().length === 0) {
@@ -54,8 +56,22 @@ export default function App() {
       );
     } finally {
       setIsLoading(false);
+      // On small screens, bring the (now-loaded) feedback into view
+      if (window.innerWidth < 768) {
+        document.querySelector(".feedback-panel")?.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        handleAnalyze();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [text, style, isLoading]);
 
   return (
     <div>
@@ -85,8 +101,8 @@ export default function App() {
           />
 
           <div className="editor-footer">
-            <span className="word-count" aria-live="polite">
-              {wordCount} {wordCount === 1 ? "word" : "words"}
+            <span className={"word-count" + (overLimit ? " word-count--over" : "")} aria-live="polite">
+              {wordCount} {wordCount === 1 ? "word" : "words"} · {charCount.toLocaleString()} / 8,000
             </span>
 
             <div className="controls-row">
@@ -108,12 +124,21 @@ export default function App() {
               >
                 {isLoading ? "Analyzing…" : "Analyze Writing"}
               </button>
+
+              <span className="kbd-hint" style={{ fontSize: "var(--text-xs, 0.75rem)", color: "var(--color-text-muted)" }}>
+                Ctrl+Enter
+              </span>
             </div>
           </div>
         </section>
 
         {/* --- Right: Feedback --- */}
-        <section className="feedback-panel" aria-label="Feedback" aria-live="polite">
+        <section
+          className="feedback-panel"
+          aria-label="Feedback"
+          aria-live="polite"
+          aria-busy={isLoading}
+        >
           {/* Empty state */}
           {!isLoading && !feedback && !error && (
             <div className="feedback-empty">
@@ -121,6 +146,17 @@ export default function App() {
                 Your feedback will appear here after you click{" "}
                 <strong>Analyze Writing</strong>.
               </p>
+              <button
+                className="sample-btn"
+                style={{ marginTop: "var(--space-md)" }}
+                onClick={() =>
+                  setText(
+                    "In the event that a student decides to participate in the extracurricular activity, they must complete the registration form no later than the last day. Also, its important to actually really note that we of learned a lot."
+                  )
+                }
+              >
+                Try a sample paragraph
+              </button>
             </div>
           )}
 
@@ -264,3 +300,4 @@ function FeedbackSection({
     </div>
   );
 }
+
